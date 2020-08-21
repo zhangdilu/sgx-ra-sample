@@ -1,0 +1,79 @@
+﻿  base64.c
+  byteorder.c
+  crypto.c
+  fileio.c
+  hexutil.c
+  logfile.c
+  getopt.c
+  正在生成代码...
+  common.cpp
+C:\Users\sjtu5\Desktop\sgx-ra-sample\common.cpp(78,22): warning C4101: “timetmp”: 未引用的局部变量
+  iasrequest.cpp
+  msgio.cpp
+  sp.cpp
+C:\Users\sjtu5\Desktop\sgx-ra-sample\sp.cpp(331,31): warning C4244: “=”: 从“unsigned long”转换到“sgx_prod_id_t”，可能丢失数据
+C:\Users\sjtu5\Desktop\sgx-ra-sample\sp.cpp(351,23): warning C4244: “=”: 从“unsigned long”转换到“sgx_isv_svn_t”，可能丢失数据
+C:\Users\sjtu5\Desktop\sgx-ra-sample\sp.cpp(903,10): warning C4477: “printf”: 格式字符串“%s”需要类型“char *”的参数，但可变参数 1 拥有了类型“sgx_report_data_t *”
+C:\Users\sjtu5\Desktop\sgx-ra-sample\sp.cpp(989,10): warning C4477: “printf”: 格式字符串“%d”需要类型“int”的参数，但可变参数 1 拥有了类型“size_t”
+C:\Users\sjtu5\Desktop\sgx-ra-sample\sp.cpp(989,10): message : 请考虑在格式字符串中使用“%zd”
+  agent_winhttp.cpp
+C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.26.28801\include\xstring(2395,23): warning C4244: “参数”: 从“_Elem”转换到“const _Elem”，可能丢失数据
+          with
+          [
+              _Elem=wchar_t
+          ]
+          and
+          [
+              _Elem=char
+          ]
+C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.26.28801\include\xstring(2406): message : 查看对正在编译的函数 模板 实例化“void std::basic_string<char,std::char_traits<char>,std::allocator<char>>::_Construct<_Iter>(_Iter,const _Iter,std::input_iterator_tag)”的引用
+          with
+          [
+              _Iter=wchar_t *
+          ]
+C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.26.28801\include\xstring(2406): message : 查看对正在编译的函数 模板 实例化“void std::basic_string<char,std::char_traits<char>,std::allocator<char>>::_Construct<_Iter>(_Iter,const _Iter,std::input_iterator_tag)”的引用
+          with
+          [
+              _Iter=wchar_t *
+          ]
+C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.26.28801\include\xstring(2386): message : 查看对正在编译的函数 模板 实例化“void std::basic_string<char,std::char_traits<char>,std::allocator<char>>::_Construct<_Iter>(const _Iter,const _Iter,std::forward_iterator_tag)”的引用
+          with
+          [
+              _Iter=wchar_t *
+          ]
+C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.26.28801\include\xstring(2386): message : 查看对正在编译的函数 模板 实例化“void std::basic_string<char,std::char_traits<char>,std::allocator<char>>::_Construct<_Iter>(const _Iter,const _Iter,std::forward_iterator_tag)”的引用
+          with
+          [
+              _Iter=wchar_t *
+          ]
+C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.26.28801\include\xstring(2921): message : 查看对正在编译的函数 模板 实例化“std::basic_string<char,std::char_traits<char>,std::allocator<char>>::basic_string<wchar_t*,0>(_Iter,_Iter,const _Alloc &)”的引用
+          with
+          [
+              _Iter=wchar_t *,
+              _Alloc=std::allocator<char>
+          ]
+C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.26.28801\include\xstring(2921): message : 查看对正在编译的函数 模板 实例化“std::basic_string<char,std::char_traits<char>,std::allocator<char>>::basic_string<wchar_t*,0>(_Iter,_Iter,const _Alloc &)”的引用
+          with
+          [
+              _Iter=wchar_t *,
+              _Alloc=std::allocator<char>
+          ]
+C:\Users\sjtu5\Desktop\sgx-ra-sample\win32\agent_winhttp.cpp(184): message : 查看对正在编译的函数 模板 实例化“std::basic_string<char,std::char_traits<char>,std::allocator<char>> &std::basic_string<char,std::char_traits<char>,std::allocator<char>>::append<std::_String_iterator<std::_String_val<std::_Simple_types<_Elem>>>,0>(const _Iter,const _Iter)”的引用
+          with
+          [
+              _Elem=wchar_t,
+              _Iter=std::_String_iterator<std::_String_val<std::_Simple_types<wchar_t>>>
+          ]
+C:\Users\sjtu5\Desktop\sgx-ra-sample\win32\agent_winhttp.cpp(184): message : 查看对正在编译的函数 模板 实例化“std::basic_string<char,std::char_traits<char>,std::allocator<char>> &std::basic_string<char,std::char_traits<char>,std::allocator<char>>::append<std::_String_iterator<std::_String_val<std::_Simple_types<_Elem>>>,0>(const _Iter,const _Iter)”的引用
+          with
+          [
+              _Elem=wchar_t,
+              _Iter=std::_String_iterator<std::_String_val<std::_Simple_types<wchar_t>>>
+          ]
+  正在生成代码...
+    正在创建库 C:\Users\sjtu5\Desktop\sgx-ra-sample\vs\x64\Debug\sp.lib 和对象 C:\Users\sjtu5\Desktop\sgx-ra-sample\vs\x64\Debug\sp.exp
+  service-provider.vcxproj -> C:\Users\sjtu5\Desktop\sgx-ra-sample\vs\x64\Debug\sp.exe
+  C:\Users\sjtu5\Desktop\sgx-ra-sample\vs\service-provider\..\run-client.cmd
+  C:\Users\sjtu5\Desktop\sgx-ra-sample\vs\service-provider\..\run-server.cmd
+  C:\Users\sjtu5\Desktop\sgx-ra-sample\vs\service-provider\..\settings.cmd
+  复制了 3 个文件

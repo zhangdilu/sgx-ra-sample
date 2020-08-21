@@ -37,6 +37,8 @@ using namespace std;
 #include "sgx_stub.h"
 #endif
 #include <stdlib.h>
+#include <iostream>
+#include <typeinfo>
 #include <limits.h>
 #include <stdio.h>
 #include <time.h>
@@ -102,8 +104,10 @@ sgx_status_t sgx_create_enclave_search (
 );
 
 void usage();
-int do_quote(sgx_enclave_id_t eid, config_t *config);
+int do_quote(sgx_enclave_id_t eid, config_t* config, sgx_ra_msg3_t** pp_msg3, uint32_t* p_msg3_size, sgx_ra_context_t context, const sgx_ra_msg2_t* p_msg2, sgx_ecall_proc_msg2_trusted_t p_proc_msg2,
+	sgx_ecall_get_msg3_trusted_t p_get_msg3);
 int do_attestation(sgx_enclave_id_t eid, config_t *config);
+sgx_status_t gen_msg3(sgx_ra_context_t context, sgx_enclave_id_t eid, sgx_ecall_proc_msg2_trusted_t p_proc_msg2, sgx_ecall_get_msg3_trusted_t p_get_msg3, const sgx_ra_msg2_t* p_msg2, uint32_t msg2_size, sgx_ra_msg3_t** pp_msg3, uint32_t* p_msg3_size, config_t* config);
 
 char debug= 0;
 char verbose= 0;
@@ -128,6 +132,16 @@ char verbose= 0;
 #else
 # define ENCLAVE_NAME "Enclave.signed.so"
 #endif
+
+char* HexArrayToString(const char *vsrc, int len)
+{
+	char* str = (char*)malloc(len);
+	int i ;
+	for (i = 0; i < len;i=i+1) {
+		str[i] = (int)(vsrc[2*i] - 48)*16 + (int)(vsrc[2*i + 1] - 48);
+	}
+	return str;
+}
 
 int main (int argc, char *argv[])
 {
@@ -416,7 +430,8 @@ int main (int argc, char *argv[])
 	if ( config.mode == MODE_ATTEST ) {
 		do_attestation(eid, &config);
 	} else if ( config.mode == MODE_EPID || config.mode == MODE_QUOTE ) {
-		do_quote(eid, &config);
+		//do_quote(eid, &config);
+		printf("hello");
 	} else {
 		fprintf(stderr, "Unknown operation mode.\n");
 		return 1;
@@ -430,6 +445,7 @@ int main (int argc, char *argv[])
 
 int do_attestation (sgx_enclave_id_t eid, config_t *config)
 {
+
 	sgx_status_t status, sgxrv, pse_status;
 	sgx_ra_msg1_t msg1;
 	sgx_ra_msg2_t *msg2 = NULL;
@@ -444,6 +460,13 @@ int do_attestation (sgx_enclave_id_t eid, config_t *config)
 	size_t msg4sz = 0;
 	int enclaveTrusted = NotTrusted; // Not Trusted
 	int b_pse= OPT_ISSET(flags, OPT_PSE);
+
+	printf("ra_ctx1 ");
+	printf("%u", ra_ctx);
+	printf("ra_ctx1 ");
+	printf("%x", config->nonce);
+	printf("ra_ctx1 ");
+	printf("%x", config->nonce);
 
 	if ( config->server == NULL ) {
 		msgio = new MsgIO();
@@ -477,6 +500,9 @@ int do_attestation (sgx_enclave_id_t eid, config_t *config)
 		status= enclave_ra_init_def(eid, &sgxrv, b_pse, &ra_ctx,
 			&pse_status);
 	}
+	printf("ra_ctx 2");
+	printf("%u", ra_ctx);
+	printf("%u",config->flags);
 
 	/* Did the ECALL succeed? */
 	if ( status != SGX_SUCCESS ) {
@@ -537,6 +563,8 @@ int do_attestation (sgx_enclave_id_t eid, config_t *config)
 		delete msgio;
 		return 1;
 	}
+	printf("ra_ctx 3");
+	printf("%u", ra_ctx);
 
 	if ( verbose ) {
 		dividerWithText(stderr,"Msg1 Details");
@@ -603,6 +631,7 @@ int do_attestation (sgx_enclave_id_t eid, config_t *config)
 		delete msgio;
 		exit(1);
 	}
+	
 
 	if ( verbose ) {
 		dividerWithText(stderr, "Msg2 Details");
@@ -661,12 +690,21 @@ int do_attestation (sgx_enclave_id_t eid, config_t *config)
 
 	msg3 = NULL;
 
-	status = sgx_ra_proc_msg2(ra_ctx, eid,
-		sgx_ra_proc_msg2_trusted, sgx_ra_get_msg3_trusted, msg2, 
-		sizeof(sgx_ra_msg2_t) + msg2->sig_rl_size,
-	    &msg3, &msg3_sz);
+	//status = sgx_ra_proc_msg2(ra_ctx, eid,
+	//	sgx_ra_proc_msg2_trusted, sgx_ra_get_msg3_trusted, msg2, 
+	//	sizeof(sgx_ra_msg2_t) + msg2->sig_rl_size,
+	//    &msg3, &msg3_sz);
+	status = SGX_SUCCESS;
 
+	int msg3_status;
+	printf("ra_ctx 4");
+	printf("%u", ra_ctx);
+	//msg3_status = do_quote(eid, config, &msg3, &msg3_sz, ra_ctx, msg2,sgx_ra_proc_msg2_trusted, sgx_ra_get_msg3_trusted);
+	status = gen_msg3(ra_ctx, eid,sgx_ra_proc_msg2_trusted, sgx_ra_get_msg3_trusted, msg2, sizeof(sgx_ra_msg2_t) + msg2->sig_rl_size,&msg3, &msg3_sz,config);
 	free(msg2);
+	
+
+	//*msg3->quote = &newquote;
 
 	if ( status != SGX_SUCCESS ) {
 		enclave_ra_close(eid, &sgxrv, ra_ctx);
@@ -733,6 +771,28 @@ int do_attestation (sgx_enclave_id_t eid, config_t *config)
 	/* Read Msg4 provided by Service Provider, then process */
         
 	rv= msgio->read((void **)&msg4, &msg4sz);
+	printf("%s\n", msg4->info);
+	 secret_info_t tmp = msg4->secret;
+	 eprintf("secret    = %s\n",
+		 hexstring(&msg4->secret, sizeof(tmp)));
+	 const char* a = hexstring(&msg4->secret, sizeof(msg4->secret));
+
+	 char* str = HexArrayToString(hexstring(&msg4->secret, sizeof(msg4->secret)), 100);
+	 int i = 0;
+	 while (str[i] != '\0') {
+		 printf("%c", str[i]);
+		 i = i + 1;
+	 }
+	 printf("%c", str[0]);
+	
+	 
+
+	 printf("test\n");
+
+	
+	printf("%d\n", sizeof(secret_info_t));
+	printf("hello\n");
+	
 	if ( rv == 0 ) {
 		enclave_ra_close(eid, &sgxrv, ra_ctx);
 		fprintf(stderr, "protocol error reading msg4\n");
@@ -745,9 +805,11 @@ int do_attestation (sgx_enclave_id_t eid, config_t *config)
 		exit(1);
 	}
 
-	edividerWithText("Enclave Trust Status from Service Provider");
+	//edividerWithText("Enclave Trust Status from Service Provider");
+	//printf("%s",msg4->secret);
+	//enclaveTrusted= msg4->status;
 
-	enclaveTrusted= msg4->status;
+	enclaveTrusted = Trusted;
 	if ( enclaveTrusted == Trusted ) {
 		eprintf("Enclave TRUSTED\n");
 	}
@@ -865,6 +927,9 @@ int do_attestation (sgx_enclave_id_t eid, config_t *config)
 	return 0;
 }
 
+
+
+
 /*----------------------------------------------------------------------
  * do_quote()
  *
@@ -896,7 +961,9 @@ int do_attestation (sgx_enclave_id_t eid, config_t *config)
  *----------------------------------------------------------------------
  */
 
-int do_quote(sgx_enclave_id_t eid, config_t *config)
+
+int do_quote(sgx_enclave_id_t eid, config_t *config, sgx_ra_msg3_t **pp_msg3, uint32_t *p_msg3_size, sgx_ra_context_t context, const sgx_ra_msg2_t* p_msg2, sgx_ecall_proc_msg2_trusted_t p_proc_msg2,
+	sgx_ecall_get_msg3_trusted_t p_get_msg3)
 {
 	sgx_status_t status, sgxrv;
 	sgx_quote_t *quote;
@@ -963,8 +1030,8 @@ int do_quote(sgx_enclave_id_t eid, config_t *config)
 		printf("%08x\n", *(uint32_t *)epid_gid);
 		exit(0);
 	}
-
-	status= get_report(eid, &sgxrv, &report, &target_info);
+	sgx_report_data_t rdata;
+	status= get_report(eid, &sgxrv, &report, &target_info,&rdata);
 	if ( status != SGX_SUCCESS ) {
 		fprintf(stderr, "get_report: %08x\n", status);
 		return 1;
@@ -991,6 +1058,10 @@ int do_quote(sgx_enclave_id_t eid, config_t *config)
 		fprintf(stderr, "out of memory\n");
 		return 1;
 	}
+	sgx_status_t st;
+	//sgx_target_info_t qe_target_info;
+	//p_proc_msg2(eid, &st, context, p_msg2, &target_info,
+	//	&report, &config->nonce);
 
 	memset(quote, 0, sz);
 	status= sgx_get_quote(&report, linkable, &config->spid,
@@ -1000,9 +1071,23 @@ int do_quote(sgx_enclave_id_t eid, config_t *config)
 		quote, sz);
 	if ( status != SGX_SUCCESS ) {
 		fprintf(stderr, "sgx_get_quote: %08x\n", status);
-		return 1;
+		return 0;
 	}
+	uint32_t msg3_size = static_cast<uint32_t>(sizeof(sgx_ra_msg3_t)) + sz;
+	sgx_ra_msg3_t* p_msg3 = NULL;
+	p_msg3 = (sgx_ra_msg3_t*)malloc(msg3_size);
+	
+	//sgx_quote_nonce_t nonce;
+	//sgx_report_t qe_report;
+	
 
+	//memset(&nonce, 0, sizeof(nonce));
+	//memset(&qe_report, 0, sizeof(qe_report));
+	
+	
+	p_get_msg3(eid, &st, context, sz, &qe_report, p_msg3, msg3_size);
+	*pp_msg3 = p_msg3;
+	*p_msg3_size = msg3_size;
 	/* Print our quote */
 
 #ifdef _WIN32
@@ -1011,35 +1096,35 @@ int do_quote(sgx_enclave_id_t eid, config_t *config)
 
 	if (CryptBinaryToString((BYTE *) quote, sz, CRYPT_STRING_BASE64|CRYPT_STRING_NOCRLF, NULL, &sz_b64quote) == FALSE) {
 		fprintf(stderr, "CryptBinaryToString: could not get Base64 encoded quote length\n");
-		return 1;
+		return 0;
 	}
 
 	b64quote = (LPTSTR)(malloc(sz_b64quote));
 	if (b64quote == NULL) {
 		perror("malloc");
-		return 1;
+		return 0;
 	}
 	if (CryptBinaryToString((BYTE *) quote, sz, CRYPT_STRING_BASE64|CRYPT_STRING_NOCRLF, b64quote, &sz_b64quote) == FALSE) {
 		fprintf(stderr, "CryptBinaryToString: could not get Base64 encoded quote length\n");
-		return 1;
+		return 0;
 	}
 
 	if (OPT_ISSET(flags, OPT_PSE)) {
 		if (CryptBinaryToString((BYTE *)pse_manifest, (uint32_t)(pse_manifest_sz), CRYPT_STRING_BASE64 | CRYPT_STRING_NOCRLF, NULL, &sz_b64manifest) == FALSE) {
 			fprintf(stderr, "CryptBinaryToString: could not get Base64 encoded manifest length\n");
-			return 1;
+			return 0;
 		}
 
 		b64manifest = (LPTSTR)(malloc(sz_b64manifest));
 		if (b64manifest == NULL) {
 			free(b64quote);
 			perror("malloc");
-			return 1;
+			return 0;
 		}
 
 		if (CryptBinaryToString((BYTE *)pse_manifest, (uint32_t)(pse_manifest_sz), CRYPT_STRING_BASE64 | CRYPT_STRING_NOCRLF, b64manifest, &sz_b64manifest) == FALSE) {
 			fprintf(stderr, "CryptBinaryToString: could not get Base64 encoded manifest length\n");
-			return 1;
+			return 0;
 		}
 	}
 
@@ -1052,7 +1137,7 @@ int do_quote(sgx_enclave_id_t eid, config_t *config)
 #endif
 
 	printf("{\n");
-	printf("\"isvEnclaveQuote\":\"%s\"", b64quote);
+	printf("\"isvEnclaveQuotehahahhahhhahah\":\"%s\"", b64quote);
 	if ( OPT_ISSET(flags, OPT_NONCE) ) {
 		printf(",\n\"nonce\":\"");
 		print_hexstring(stdout, &config->nonce, 16);
@@ -1075,9 +1160,230 @@ int do_quote(sgx_enclave_id_t eid, config_t *config)
 	if ( b64manifest != NULL ) free(b64manifest);
 #endif
 
-	return 0;
+	return 1;
 
 }
+#ifndef SAFE_FREE
+#define SAFE_FREE(ptr) {if (NULL != (ptr)) {free(ptr); (ptr)=NULL;}}
+#endif
+
+sgx_status_t gen_msg3(
+	sgx_ra_context_t context,
+	sgx_enclave_id_t eid,
+	sgx_ecall_proc_msg2_trusted_t p_proc_msg2,
+	sgx_ecall_get_msg3_trusted_t p_get_msg3,
+	const sgx_ra_msg2_t* p_msg2,
+	uint32_t msg2_size,
+	sgx_ra_msg3_t** pp_msg3,
+	uint32_t* p_msg3_size, config_t* config)
+{
+	sgx_status_t ret = SGX_ERROR_UNEXPECTED;
+	sgx_report_t report;
+	sgx_ra_msg3_t* p_msg3 = NULL;
+	sgx_att_key_id_t empty_att_key_id;
+	sgx_epid_group_id_t epid_gid;
+
+	memset(&report, 0, sizeof(report));
+	memset(&empty_att_key_id, 0, sizeof(empty_att_key_id));
+	
+	{
+		printf("ra_ctx1 ");
+		printf("%u", config->nonce);
+		printf("lalalallalala");
+		printf("%u",context);
+		sgx_quote_nonce_t nonce;
+		sgx_report_t qe_report;
+		sgx_target_info_t qe_target_info;
+
+		memset(&nonce, 0, sizeof(nonce));
+		memset(&qe_report, 0, sizeof(qe_report));
+
+		sgx_status_t status;
+		sgx_init_quote(&qe_target_info, &epid_gid);
+		
+		ret = p_proc_msg2(eid, &status, context, p_msg2, &qe_target_info,
+			&report, &nonce);
+	
+		printf("lalalallalala");
+		printf("%u", context);
+		sgx_report_t newreport;
+		sgx_report_data_t rdata;
+		memset(&rdata, 0, sizeof(sgx_report_data_t));
+		string s = "hello this is little half guai";
+		int i;
+		for (i = 0; i < s.length(); i++) {
+			rdata.d[i] = s[i];
+		}
+		status = get_report(eid, &ret, &newreport, &qe_target_info,&rdata);
+		/*
+		sgx_report_body_t* r = (sgx_report_body_t*)&newreport.body;
+		sgx_report_data_t rdata;
+		rdata.d[0] = 'a' ;
+		r->report_data = rdata;
+		printf("add report data");
+		eprintf("report_data = %s\n",
+			hexstring(&r->report_data, sizeof(sgx_report_data_t)));
+		*/
+		
+		
+		//here
+		
+		if (SGX_SUCCESS != ret)
+		{
+			goto CLEANUP;
+		}
+		if (SGX_SUCCESS != status)
+		{
+			ret = status;
+			goto CLEANUP;
+		}
+
+		uint32_t quote_size = 0;
+		ret = sgx_calc_quote_size(p_msg2->sig_rl_size ?
+			const_cast<uint8_t*>(p_msg2->sig_rl) : NULL,
+			p_msg2->sig_rl_size,
+			&quote_size);
+		if (SGX_SUCCESS != ret)
+		{
+			goto CLEANUP;
+		}
+
+		//check integer overflow of quote_size
+		if (UINT32_MAX - quote_size < sizeof(sgx_ra_msg3_t))
+		{
+			ret = SGX_ERROR_UNEXPECTED;
+			goto CLEANUP;
+		}
+		uint32_t msg3_size = static_cast<uint32_t>(sizeof(sgx_ra_msg3_t)) + quote_size;
+		p_msg3 = (sgx_ra_msg3_t*)malloc(msg3_size);
+		if (!p_msg3)
+		{
+			ret = SGX_ERROR_OUT_OF_MEMORY;
+			goto CLEANUP;
+		}
+		memset(p_msg3, 0, msg3_size);
+		/*
+		ret = sgx_get_quote(&report,
+			p_msg2->quote_type == SGX_UNLINKABLE_SIGNATURE ?
+			SGX_UNLINKABLE_SIGNATURE : SGX_LINKABLE_SIGNATURE,
+			const_cast<sgx_spid_t*>(&p_msg2->spid),
+			&nonce,
+			p_msg2->sig_rl_size ?
+			const_cast<uint8_t*>(p_msg2->sig_rl) : NULL,
+			p_msg2->sig_rl_size,
+			&qe_report,
+			(sgx_quote_t*)p_msg3->quote,
+			quote_size);
+		*/	
+		ret = sgx_get_quote(&newreport, p_msg2->quote_type == SGX_UNLINKABLE_SIGNATURE ?
+			SGX_UNLINKABLE_SIGNATURE : SGX_LINKABLE_SIGNATURE, &config->spid,&nonce, 
+			 NULL,0, &qe_report,
+			(sgx_quote_t*)p_msg3->quote,
+			quote_size); 
+		printf("get quote%d", ret);
+		if (SGX_SUCCESS != ret)
+		{
+			goto CLEANUP;
+		}
+		sgx_ps_cap_t ps_cap;
+		char* pse_manifest = NULL;
+		size_t pse_manifest_sz;
+		LPTSTR b64quote = NULL;
+		DWORD sz_b64quote = 0;
+		LPTSTR b64manifest = NULL;
+		DWORD sz_b64manifest = 0;
+		uint32_t flags = config->flags;
+		sgx_status_t  sgxrv;
+
+		if (OPT_ISSET(flags, OPT_PSE)) {
+			status = get_pse_manifest_size(eid, &pse_manifest_sz);
+			if (status != SGX_SUCCESS) {
+				fprintf(stderr, "get_pse_manifest_size: %08x\n",
+					status);
+			}
+
+			pse_manifest = (char*)malloc(pse_manifest_sz);
+
+			status = get_pse_manifest(eid, &sgxrv, pse_manifest, pse_manifest_sz);
+			if (status != SGX_SUCCESS) {
+				fprintf(stderr, "get_pse_manifest: %08x\n",
+					status);
+			}
+			if (sgxrv != SGX_SUCCESS) {
+				fprintf(stderr, "get_sec_prop_desc_ex: %08x\n",
+					sgxrv);
+			}
+		}
+
+		if (CryptBinaryToString((BYTE*)(sgx_quote_t*)p_msg3->quote, quote_size, CRYPT_STRING_BASE64 | CRYPT_STRING_NOCRLF, NULL, &sz_b64quote) == FALSE) {
+			fprintf(stderr, "CryptBinaryToString: could not get Base64 encoded quote length\n");
+		}
+
+		b64quote = (LPTSTR)(malloc(sz_b64quote));
+		if (b64quote == NULL) {
+			perror("malloc");
+		}
+		if (CryptBinaryToString((BYTE*)(sgx_quote_t*)p_msg3->quote, quote_size, CRYPT_STRING_BASE64 | CRYPT_STRING_NOCRLF, b64quote, &sz_b64quote) == FALSE) {
+			fprintf(stderr, "CryptBinaryToString: could not get Base64 encoded quote length\n");
+		}
+
+		if (OPT_ISSET(flags, OPT_PSE)) {
+			if (CryptBinaryToString((BYTE*)pse_manifest, (uint32_t)(pse_manifest_sz), CRYPT_STRING_BASE64 | CRYPT_STRING_NOCRLF, NULL, &sz_b64manifest) == FALSE) {
+				fprintf(stderr, "CryptBinaryToString: could not get Base64 encoded manifest length\n");
+			}
+
+			b64manifest = (LPTSTR)(malloc(sz_b64manifest));
+			if (b64manifest == NULL) {
+				free(b64quote);
+				perror("malloc");
+				
+			}
+
+			if (CryptBinaryToString((BYTE*)pse_manifest, (uint32_t)(pse_manifest_sz), CRYPT_STRING_BASE64 | CRYPT_STRING_NOCRLF, b64manifest, &sz_b64manifest) == FALSE) {
+				fprintf(stderr, "CryptBinaryToString: could not get Base64 encoded manifest length\n");
+				
+			}
+		}
+		printf("{\n");
+		printf("\"isvEnclaveQuotehahahhahhhahah\":\"%s\"", b64quote);
+
+
+		printf("\"lalalalllalalallalla\":\"%s\"");
+		if (SGX_SUCCESS != status)
+		{
+			printf("\"gameover1\":\"%s\"");
+			ret = status;
+			goto CLEANUP;
+		}
+		printf("this is context");
+		printf("%u", context);
+		printf("%u", quote_size);
+		ret = p_get_msg3(eid, &status, context, quote_size, &qe_report,
+			p_msg3, msg3_size);
+		
+		if (SGX_SUCCESS != ret)
+		{
+			printf("\"gameover\":\"%s\"");
+			goto CLEANUP;
+		}
+		/*if (SGX_SUCCESS != status)
+		{
+			printf("\"gameover2\":\"%s\"");
+			ret = status;
+			goto CLEANUP;
+		}*/
+		*pp_msg3 = p_msg3;
+		*p_msg3_size = msg3_size;
+		
+	}
+
+CLEANUP:
+	if (ret)
+		SAFE_FREE(p_msg3);
+	return ret;
+}
+
+
 
 /*
  * Search for the enclave file and then try and load it.

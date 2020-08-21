@@ -95,6 +95,7 @@ int verify_enclave_identity(sgx_measurement_t req_mr_signer,
 
 		return 0;
 	}
+	
 
 	return 1;
 }

@@ -42,7 +42,15 @@ typedef enum {
 	Trusted
 } attestation_status_t;
 
+typedef struct _secret_info
+{
+	uint8_t secret_info[100];
+} secret_info_t;
+
+
 typedef struct _ra_msg4_struct {
+	char info[100];
+	secret_info_t secret;
 	attestation_status_t status;
 	sgx_platform_info_t platformInfoBlob;
 } ra_msg4_t;

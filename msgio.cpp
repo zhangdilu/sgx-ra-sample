@@ -27,6 +27,7 @@ typedef DWORD ssize_t;
 #endif
 
 #include <stdio.h>
+#include <iostream>
 #include <stdlib.h>
 #include <string.h>
 #include <sgx_urts.h>
@@ -334,7 +335,15 @@ again:
 			}
 
 			from_hexstring((unsigned char *) *dest, rbuffer.c_str(), idx/2);
+			//std::cout << "----------------test-----------\n";
+			//std::cout << rbuffer;
+			//std::cout << rbuffer.c_str();
+			//std::cout << (unsigned char*)*dest;
+			//std::cout << *dest;
+			//printf("%s\n", (unsigned char*)*dest);
+			//printf("%s\n", *dest);
 			rbuffer.erase(0, idx+ws);
+			
 
 			return 1;
 		} else return 0;

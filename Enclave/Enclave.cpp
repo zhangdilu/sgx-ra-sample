@@ -79,12 +79,12 @@ static const sgx_ec256_public_t def_service_public_key = {
  * to deal with that.
  */
 
-sgx_status_t get_report(sgx_report_t *report, sgx_target_info_t *target_info)
+sgx_status_t get_report(sgx_report_t *report, sgx_target_info_t *target_info, sgx_report_data_t *report_data)
 {
 #ifdef SGX_HW_SIM
 	return sgx_create_report(NULL, NULL, report);
 #else
-	return sgx_create_report(target_info, NULL, report);
+	return sgx_create_report(target_info, report_data, report);
 #endif
 }
 

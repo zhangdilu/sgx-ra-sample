@@ -128,7 +128,7 @@ int get_attestation_report(IAS_Connection *ias, int version,
 int get_proxy(char **server, unsigned int *port, const char *url);
 
 char debug = 0;
-char verbose = 0;
+char verbose = 1;
 /* Need a global for the signal handler */
 MsgIO *msgio = NULL;
 
@@ -793,6 +793,7 @@ int process_msg3 (MsgIO *msgio, IAS_Connection *ias, sgx_ra_msg1_t *msg1,
 		free(msg3);
 		return 0;
 	}
+	printf("\"isvEnclaveQuotehahhahhahhhah\":\"%s\"", b64quote);
 	q= (sgx_quote_t *) msg3->quote;
 
 	if ( verbose ) {
@@ -898,7 +899,9 @@ int process_msg3 (MsgIO *msgio, IAS_Connection *ias, sgx_ra_msg1_t *msg1,
 			eprintf("report_data[64]    = %s\n",
 				hexstring(&r->report_data, 64));
 		}
-
+		printf("lalallallalalal little kuai");
+		printf("%s\n", &r->report_data);
+		/*
 		if ( CRYPTO_memcmp((void *) vfy_rdata, (void *) &r->report_data,
 			64) ) {
 
@@ -907,6 +910,7 @@ int process_msg3 (MsgIO *msgio, IAS_Connection *ias, sgx_ra_msg1_t *msg1,
 			free(msg3);
 			return 0;
 		}
+		*/
 
 		/*
 		 * The service provider must validate that the enclave
@@ -925,13 +929,19 @@ int process_msg3 (MsgIO *msgio, IAS_Connection *ias, sgx_ra_msg1_t *msg1,
 
 #ifndef _WIN32
 /* Windows implementation is not available yet */
-
+		printf("lalalallalallala")
 		if ( ! verify_enclave_identity(config->req_mrsigner, 
 			config->req_isv_product_id, config->min_isvsvn, 
 			config->allow_debug_enclave, r) ) {
 
 			eprintf("Invalid enclave.\n");
 			msg4->status= NotTrusted;
+		}
+		string MRENCLAVE = "28752b7e3549ad46a912fd62278e439cae38f4da0624c27689fa5bcdedf0aa66";
+		sgx_measurement_t req_mr_enclave;
+		from_hexstring((unsigned char*)&req_mr_enclave, MRENCLAVE.c_str(), MRENCLAVE.length() / 2);
+		if (memcmp((const void*)&r->mr_enclave, (const void*)&req_mr_enclave, sizeof(sgx_measurement_t))) {
+			msg4->status = NotTrusted;
 		}
 #endif
 
@@ -965,10 +975,30 @@ int process_msg3 (MsgIO *msgio, IAS_Connection *ias, sgx_ra_msg1_t *msg1,
 		/* Serialize the members of the Msg4 structure independently */
 		/* vs. the entire structure as one send_msg() */
 
-		msgio->send_partial(&msg4->status, sizeof(msg4->status));
-		msgio->send(&msg4->platformInfoBlob, sizeof(msg4->platformInfoBlob));
 
+		secret_info_t news = { "1abcdefg" };
+		msg4->secret = news;
+		string s = "hello this is little kuai";
+		int i;
+		for (i = 0; i < s.length(); i++) {
+			msg4->info[i] = s[i];
+		}
+		msg4->info[i] = '\0';
+	
+
+		printf("%d\n", sizeof(msg4->secret));
+		eprintf("secret    = %s\n",
+			hexstring(&msg4->secret, sizeof(msg4->secret)));
+		eprintf("secret    = %x\n",
+			hexstring(&msg4->secret, sizeof(msg4->secret)));
+
+		msgio->send_partial(&msg4->info, sizeof(msg4->info));
 		fsend_msg_partial(fplog, &msg4->status, sizeof(msg4->status));
+
+		msgio->send_partial(&msg4->secret, sizeof(msg4->secret));
+		fsend_msg_partial(fplog, &msg4->status, sizeof(msg4->status));
+
+		msgio->send(&msg4->platformInfoBlob, sizeof(msg4->platformInfoBlob));
 		fsend_msg(fplog, &msg4->platformInfoBlob,
 			sizeof(msg4->platformInfoBlob));
 		edivider();
