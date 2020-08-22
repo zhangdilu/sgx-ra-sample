@@ -1351,6 +1351,8 @@ sgx_status_t gen_msg3(
 
 		printf("\"lalalalllalalallalla\":\"%s\"");
 #else
+		char* b64quote = NULL;
+		char* b64manifest = NULL;
 		b64quote = base64_encode((char*)quote, sz);
 		if (b64quote == NULL) {
 			eprintf("Could not base64 encode quote\n");
