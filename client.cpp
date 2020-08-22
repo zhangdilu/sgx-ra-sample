@@ -1314,7 +1314,7 @@ sgx_status_t gen_msg3(
 					sgxrv);
 			}
 		}
-
+#ifdef _WIN32
 		if (CryptBinaryToString((BYTE*)(sgx_quote_t*)p_msg3->quote, quote_size, CRYPT_STRING_BASE64 | CRYPT_STRING_NOCRLF, NULL, &sz_b64quote) == FALSE) {
 			fprintf(stderr, "CryptBinaryToString: could not get Base64 encoded quote length\n");
 		}
@@ -1349,12 +1349,13 @@ sgx_status_t gen_msg3(
 
 
 		printf("\"lalalalllalalallalla\":\"%s\"");
-		if (SGX_SUCCESS != status)
-		{
-			printf("\"gameover1\":\"%s\"");
-			ret = status;
-			goto CLEANUP;
+#else
+		b64quote = base64_encode((char*)quote, sz);
+		if (b64quote == NULL) {
+			eprintf("Could not base64 encode quote\n");
+			return 1;
 		}
+#endif		
 		printf("this is context");
 		printf("%u", context);
 		printf("%u", quote_size);
