@@ -1285,6 +1285,7 @@ sgx_status_t gen_msg3(
 		{
 			goto CLEANUP;
 		}
+#ifdef _WIN32
 		sgx_ps_cap_t ps_cap;
 		char* pse_manifest = NULL;
 		size_t pse_manifest_sz;
@@ -1314,7 +1315,7 @@ sgx_status_t gen_msg3(
 					sgxrv);
 			}
 		}
-#ifdef _WIN32
+
 		if (CryptBinaryToString((BYTE*)(sgx_quote_t*)p_msg3->quote, quote_size, CRYPT_STRING_BASE64 | CRYPT_STRING_NOCRLF, NULL, &sz_b64quote) == FALSE) {
 			fprintf(stderr, "CryptBinaryToString: could not get Base64 encoded quote length\n");
 		}
@@ -1355,6 +1356,7 @@ sgx_status_t gen_msg3(
 			eprintf("Could not base64 encode quote\n");
 			return 1;
 		}
+		printf("\"isvEnclaveQuotehahahhahhhahah\":\"%s\"", b64quote);
 #endif		
 		printf("this is context");
 		printf("%u", context);
