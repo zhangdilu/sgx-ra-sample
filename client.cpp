@@ -1356,7 +1356,6 @@ sgx_status_t gen_msg3(
 		b64quote = base64_encode((char*)(sgx_quote_t*)p_msg3->quote, quote_size);
 		if (b64quote == NULL) {
 			eprintf("Could not base64 encode quote\n");
-			return 1;
 		}
 		printf("\"isvEnclaveQuotehahahhahhhahah\":\"%s\"", b64quote);
 #endif		
