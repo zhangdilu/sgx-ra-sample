@@ -929,7 +929,7 @@ int process_msg3 (MsgIO *msgio, IAS_Connection *ias, sgx_ra_msg1_t *msg1,
 
 #ifndef _WIN32
 /* Windows implementation is not available yet */
-		printf("lalalallalallala")£»
+		printf("lalalallalallala");
 		if ( ! verify_enclave_identity(config->req_mrsigner, 
 			config->req_isv_product_id, config->min_isvsvn, 
 			config->allow_debug_enclave, r) ) {
