@@ -67,6 +67,13 @@ using namespace std;
 #include "logfile.h"
 #include "quote_size.h"
 
+#include <openssl/obj_mac.h>
+#include <openssl/ec.h>
+#include <openssl/bn.h>
+#include <openssl/pem.h>
+#include <openssl/rsa.h>
+#include <openssl/evp.h>
+
 #define MAX_LEN 80
 
 #ifdef _WIN32
@@ -108,6 +115,7 @@ int do_quote(sgx_enclave_id_t eid, config_t* config, sgx_ra_msg3_t** pp_msg3, ui
 	sgx_ecall_get_msg3_trusted_t p_get_msg3);
 int do_attestation(sgx_enclave_id_t eid, config_t *config);
 sgx_status_t gen_msg3(sgx_ra_context_t context, sgx_enclave_id_t eid, sgx_ecall_proc_msg2_trusted_t p_proc_msg2, sgx_ecall_get_msg3_trusted_t p_get_msg3, const sgx_ra_msg2_t* p_msg2, uint32_t msg2_size, sgx_ra_msg3_t** pp_msg3, uint32_t* p_msg3_size, config_t* config);
+bool enclave_generate_key();
 
 char debug= 0;
 char verbose= 0;
@@ -1143,6 +1151,64 @@ int do_quote(sgx_enclave_id_t eid, config_t *config, sgx_ra_msg3_t **pp_msg3, ui
 		print_hexstring(stdout, &config->nonce, 16);
 		printf("\"");
 	}
+
+	const char *opt_enclave_path = NULL;
+    const char *opt_statefile = NULL;
+    const char *opt_public_key_file = NULL;
+	opt_enclave_path = "../enclave/enclave.signed.so";
+    opt_statefile = "../demo_sgx/sealeddata.bin";
+    opt_public_key_file = "../demo_sgx/pub.pem";
+	enclave_generate_key()
+	save_enclave_state(opt_statefile)
+	save_public_key(opt_public_key_file)
+
+
+
+
+bool enclave_generate_key()
+{
+    sgx_status_t ecall_retval = SGX_ERROR_UNEXPECTED;
+
+    printf("[GatewayApp]: Calling enclave to generate key material\n");
+
+    /*
+    * Invoke ECALL, 'ecall_key_gen_and_seal()', to generate a keypair and seal it to the enclave.
+    */
+    sgx_lasterr = ecall_key_gen_and_seal(enclave_id,
+                                         &ecall_retval,
+                                         (char *)public_key_buffer,
+                                         public_key_buffer_size,
+                                         (char *)sealed_data_buffer,
+                                         sealed_data_buffer_size);
+
+
+    if (sgx_lasterr == SGX_SUCCESS &&
+        (ecall_retval != SGX_SUCCESS))
+    {
+        fprintf(stderr, "[GatewayApp]: ERROR: ecall_key_gen_and_seal returned %d\n", ecall_retval);
+        sgx_lasterr = SGX_ERROR_UNEXPECTED;
+    }
+
+    return (sgx_lasterr == SGX_SUCCESS);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #ifdef _WIN32
 	if (OPT_ISSET(flags, OPT_PSE)) {
