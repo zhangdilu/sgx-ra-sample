@@ -41,39 +41,9 @@ int digitalEnvelope()
 
     int option_index = 0;
 
-    /*
-    while (getopt_long_only(argc, argv, "", long_options, &option_index) != -1)
-    {
-        switch (option_index)
-        {
-        case 0:
-            opt_keygen = true;
-            break;
-        case 1:
-            opt_aes_key_file = optarg;
-            break;
-        case 2:
-            opt_public_key_file = optarg;
-            break;
-        case 3:
-            opt_encrypted_key_file = optarg;
-            break;
-        case 4:
-            opt_ciphertext_file = optarg;
-            break;
-
-        }
-    }
-
-    if (optind < argc)
-    {
-        opt_input_file = argv[optind++];
-    }*/
-
-
     opt_keygen = true;
     opt_aes_key_file = "aes.bin";
-    opt_public_key_file = "pub.pem";
+    opt_public_key_file = "../pub.pem";
     opt_encrypted_key_file = "e_aes.bin";
     opt_ciphertext_file = "cipher.txt";
     opt_input_file = "./Sensor_Data";

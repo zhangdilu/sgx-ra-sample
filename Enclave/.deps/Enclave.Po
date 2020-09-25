@@ -20,7 +20,10 @@ Enclave.o: Enclave.cpp ../config.h Enclave_t.h \
  /opt/intel/sgxsdk/include/sgx_tcrypto.h \
  /opt/intel/sgxsdk/include/tlibc/stdlib.h ../config.h \
  /opt/intel/sgxsdk/include/tlibc/string.h \
- /opt/intel/sgxsdk/include/sgx_tcrypto.h
+ /opt/intel/sgxsdk/include/sgx_tcrypto.h \
+ /opt/intel/sgxsdk/include/tlibc/stdarg.h \
+ /opt/intel/sgxsdk/include/tlibc/stdio.h \
+ /opt/intel/sgxsdk/include/sgx_tseal.h
 
 ../config.h:
 
@@ -75,3 +78,9 @@ Enclave_t.h:
 /opt/intel/sgxsdk/include/tlibc/string.h:
 
 /opt/intel/sgxsdk/include/sgx_tcrypto.h:
+
+/opt/intel/sgxsdk/include/tlibc/stdarg.h:
+
+/opt/intel/sgxsdk/include/tlibc/stdio.h:
+
+/opt/intel/sgxsdk/include/sgx_tseal.h:

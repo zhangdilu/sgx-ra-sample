@@ -22,6 +22,9 @@ extern "C" {
 
 
 sgx_status_t get_report(sgx_enclave_id_t eid, sgx_status_t* retval, sgx_report_t* report, sgx_target_info_t* target_info, sgx_report_data_t* report_data);
+sgx_status_t ecall_key_gen_and_seal(sgx_enclave_id_t eid, sgx_status_t* retval, char* pubkey, size_t pubkey_size, char* sealedprivkey, size_t sealedprivkey_size);
+sgx_status_t ecall_calc_buffer_sizes(sgx_enclave_id_t eid, sgx_status_t* retval, size_t* epubkey_size, size_t* esealedprivkey_size);
+sgx_status_t ecall_unseal_and_decrypt(sgx_enclave_id_t eid, sgx_status_t* retval, uint8_t* msg, uint32_t msg_size, uint8_t* encrypted_key, uint32_t encrypted_key_size, char* sealed, size_t sealed_size);
 sgx_status_t enclave_ra_init(sgx_enclave_id_t eid, sgx_status_t* retval, sgx_ec256_public_t key, int b_pse, sgx_ra_context_t* ctx, sgx_status_t* pse_status);
 sgx_status_t enclave_ra_init_def(sgx_enclave_id_t eid, sgx_status_t* retval, int b_pse, sgx_ra_context_t* ctx, sgx_status_t* pse_status);
 sgx_status_t enclave_ra_get_key_hash(sgx_enclave_id_t eid, sgx_status_t* retval, sgx_status_t* get_keys_status, sgx_ra_context_t ctx, sgx_ra_key_type_t type, sgx_sha256_hash_t* hash);

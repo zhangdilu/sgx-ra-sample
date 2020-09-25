@@ -27,6 +27,13 @@ in the License.
 #include <sgx_tkey_exchange.h>
 #include <sgx_tcrypto.h>
 
+#include <stdarg.h>
+#include <stdio.h>
+
+#include <sgx_tcrypto.h>
+#include <sgx_tseal.h>
+
+
 static const sgx_ec256_public_t def_service_public_key = {
     {
         0x72, 0x12, 0x8a, 0x7a, 0x17, 0x52, 0x6e, 0xbf,
@@ -78,6 +85,176 @@ static const sgx_ec256_public_t def_service_public_key = {
  * a C++ compiler. Just making the source C++ was the easiest way
  * to deal with that.
  */
+
+sgx_status_t ecall_key_gen_and_seal(char *pubkey, size_t pubkey_size, char *sealedprivkey, size_t sealedprivkey_size)
+{
+  sgx_status_t ret = SGX_ERROR_UNEXPECTED;
+
+  size_t byte_size = 256;
+  size_t p_byte_size = byte_size/2;
+  size_t e_byte_size = 4;
+  unsigned char e[4] = {1, 0, 1};
+  unsigned char *n =(unsigned char *)malloc(byte_size);
+  unsigned char *d = (unsigned char *)malloc(byte_size);
+  unsigned char *p = (unsigned char *)malloc(p_byte_size);
+  unsigned char *q = (unsigned char *)malloc(p_byte_size);
+  unsigned char *p_dmp1 = (unsigned char *)malloc(p_byte_size);
+  unsigned char *p_dmq1 = (unsigned char *)malloc(p_byte_size);
+  unsigned char *p_iqmp = (unsigned char *)malloc(p_byte_size);
+  uint8_t *p_private = (uint8_t *)malloc(5*p_byte_size);
+  
+  if ((ret = sgx_create_rsa_key_pair(byte_size, e_byte_size, n, d, e, p, q, p_dmp1, p_dmq1, p_iqmp)) != SGX_SUCCESS)
+  {
+    //print("\nTrustedApp: sgx_create_rsa_key_pair() failed !\n");
+    goto cleanup;
+  }
+  memcpy(p_private,p,p_byte_size);
+  memcpy(p_private+p_byte_size,q,p_byte_size);
+  memcpy(p_private+p_byte_size*2,p_dmp1,p_byte_size);
+  memcpy(p_private+p_byte_size*3,p_dmq1,p_byte_size);
+  memcpy(p_private+p_byte_size*4,p_iqmp,p_byte_size);
+  memcpy(pubkey,n,byte_size);
+  
+  //print("n:");printh(n,byte_size);
+  //print("\nseal:");printh(p_private,p_byte_size*5);
+  if (sealedprivkey_size >= sgx_calc_sealed_data_size(0U, p_byte_size*5))
+  {
+    if ((ret = sgx_seal_data(0U, NULL, p_byte_size*5, (uint8_t *)p_private, (uint32_t)sealedprivkey_size, (sgx_sealed_data_t *)sealedprivkey)) != SGX_SUCCESS)
+    {
+
+      //print("\nTrustedApp: sgx_seal_data() failed !\n");
+      goto cleanup;
+    }
+  }
+  else
+  {
+    //print("\nTrustedApp: Size allocated for sealedprivkey by untrusted app is less than the required size !\n");
+    ret = SGX_ERROR_INVALID_PARAMETER;
+    goto cleanup;
+  }
+	      
+  //print("\nTrustedApp: Key pair generated and private key was sealed. Sent the public key and sealed private key back.\n");
+  ret = SGX_SUCCESS;
+
+cleanup:
+free(n);free(d); free(p); free(q); free(p_dmp1); free(p_dmq1); free(p_iqmp);free(p_private);
+return ret;
+}
+
+sgx_status_t ecall_calc_buffer_sizes(size_t* epubkey_size, size_t* esealedprivkey_size)
+{
+  size_t size=256;
+  *epubkey_size = size;
+  *esealedprivkey_size = sgx_calc_sealed_data_size(0U, 5*size/2);
+  //print("\nTrustedApp: Sizes for public key, sealed private key successfully.\n");
+  return SGX_SUCCESS;
+}
+
+
+
+sgx_status_t ecall_unseal_and_decrypt(uint8_t *msg, uint32_t msg_size, uint8_t *encrypted_key, uint32_t encrypted_key_size, char *sealed, size_t sealed_size)
+{
+  sgx_status_t ret = SGX_ERROR_UNEXPECTED;
+
+  void *new_pri_key2=NULL;
+  int byte_size = 256;
+  size_t p_byte_size = byte_size/2;
+  int e_byte_size = 4;
+  unsigned char e[4] = {1, 0, 1};
+  unsigned char *p = (unsigned char *)malloc(p_byte_size);
+  unsigned char *q = (unsigned char *)malloc(p_byte_size);
+  unsigned char *p_dmp1 = (unsigned char *)malloc(p_byte_size);
+  unsigned char *p_dmq1 = (unsigned char *)malloc(p_byte_size);
+  unsigned char *p_iqmp = (unsigned char *)malloc(p_byte_size);
+  size_t aeskey_size=0;
+  unsigned char *aeskey=NULL;
+  size_t ctr_size=16;
+  uint8_t *p_ctr=(uint8_t *)malloc(ctr_size);
+  uint32_t text_size=msg_size-ctr_size;
+  uint8_t *p_src=(uint8_t *)malloc(text_size);
+  uint8_t *p_dst=(uint8_t *)malloc(text_size);
+
+
+  //print("\nTrustedApp: Received sensor data and the sealed private key.\n");
+  uint32_t unsealed_data_size = sgx_get_encrypt_txt_len((const sgx_sealed_data_t *)sealed);
+
+  uint8_t *unsealed_data = (uint8_t *)malloc(unsealed_data_size);
+  if (unsealed_data == NULL)
+  {
+    //printf("\nTrustedApp: malloc(unsealed_data_size) failed !\n");
+    goto cleanup;
+  }
+
+  if ((ret = sgx_unseal_data((sgx_sealed_data_t *)sealed, NULL, NULL, unsealed_data, &unsealed_data_size)) != SGX_SUCCESS)
+  {
+    //printf("\nTrustedApp: sgx_unseal_data() failed !\n");
+    goto cleanup;
+  }
+
+  memcpy(p,unsealed_data,p_byte_size);
+  memcpy(q,unsealed_data+p_byte_size,p_byte_size);
+  memcpy(p_dmp1,unsealed_data+p_byte_size*2,p_byte_size);
+  memcpy(p_dmq1,unsealed_data+p_byte_size*3,p_byte_size);
+  memcpy(p_iqmp,unsealed_data+p_byte_size*4,p_byte_size);
+  if ((ret = sgx_create_rsa_priv2_key(byte_size, e_byte_size, e, p, q, p_dmp1, p_dmq1, p_iqmp, &new_pri_key2)) != SGX_SUCCESS)
+  {
+    //printf("\nTrustedApp: sgx_create_rsa_priv2_key() failed !\n");
+    goto cleanup;
+  }
+
+  if ((ret = sgx_rsa_priv_decrypt_sha256(new_pri_key2, NULL, &aeskey_size,encrypted_key,encrypted_key_size)) != SGX_SUCCESS)
+  {
+    //printf("\nTrustedApp: sgx_rsa_priv_decrypt_sha256() failed !\n");
+    goto cleanup;
+  }
+  aeskey=(unsigned char *)malloc(aeskey_size);
+  if ((ret = sgx_rsa_priv_decrypt_sha256(new_pri_key2, aeskey, &aeskey_size,encrypted_key,encrypted_key_size)) != SGX_SUCCESS)
+  {
+    //printf("\nTrustedApp: sgx_rsa_priv_decrypt_sha256() failed !\n");
+    goto cleanup;
+  }
+
+  /*print("p:");printh(p,p_byte_size);print("\n");
+  print("p:");printh(p,p_byte_size);print("\n");
+  print("q:");printh(q,p_byte_size);print("\n");
+  print("e:");printh(e,4);print("\n");
+  print("p_dmp1:");printh(p_dmp1,p_byte_size);print("\n");
+  print("p_dmq1:");printh(p_dmq1,p_byte_size);print("\n");
+  print("p_iqmp:");printh(p_iqmp,p_byte_size);print("\n");
+  print("aeskey:");printh(aeskey,aeskey_size);print("\n");*/
+  //print("aes_key:");print(aeskey);
+  memcpy(p_ctr,msg,ctr_size);
+  memcpy(p_src,msg+ctr_size,text_size);
+
+  sgx_aes_ctr_decrypt((sgx_aes_gcm_128bit_key_t *)aeskey,p_src,text_size,p_ctr,128,p_dst);
+  //print(p_dst);
+  //printf("\nTrustedApp: Unsealed the sealed private key, decrypted sensor data with this private key.\n");
+  ret = SGX_SUCCESS;
+
+cleanup:
+  if (unsealed_data != NULL)
+  {
+    memset_s(unsealed_data, unsealed_data_size, 0, unsealed_data_size);
+    free(unsealed_data);
+  }
+  if (aeskey != NULL)
+  {
+    memset_s(aeskey, aeskey_size, 0, aeskey_size);
+    free(aeskey);
+  }
+  memset_s(p_src, text_size, 0, text_size);free(p_src);
+  memset_s(p_ctr, ctr_size, 0, ctr_size);free(p_ctr);
+  memset_s(p_dst, text_size, 0, text_size);free(p_dst);
+  memset_s(p, p_byte_size, 0, p_byte_size);free(p);
+  memset_s(q, p_byte_size, 0, p_byte_size);free(q);
+  memset_s(p_dmp1, p_byte_size, 0, p_byte_size);free(p_dmp1);
+  memset_s(p_dmq1, p_byte_size, 0, p_byte_size);free(p_dmq1);
+  memset_s(p_iqmp, p_byte_size, 0, p_byte_size);free(p_iqmp);
+  if(new_pri_key2)sgx_free_rsa_key(new_pri_key2,SGX_RSA_PRIVATE_KEY,byte_size,e_byte_size);
+
+return ret;
+}
+
 
 sgx_status_t get_report(sgx_report_t *report, sgx_target_info_t *target_info, sgx_report_data_t *report_data)
 {
@@ -199,3 +376,4 @@ sgx_status_t enclave_ra_close(sgx_ra_context_t ctx)
         ret = sgx_ra_close(ctx);
         return ret;
 }
+

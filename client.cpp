@@ -115,7 +115,39 @@ int do_quote(sgx_enclave_id_t eid, config_t* config, sgx_ra_msg3_t** pp_msg3, ui
 	sgx_ecall_get_msg3_trusted_t p_get_msg3);
 int do_attestation(sgx_enclave_id_t eid, config_t *config);
 sgx_status_t gen_msg3(sgx_ra_context_t context, sgx_enclave_id_t eid, sgx_ecall_proc_msg2_trusted_t p_proc_msg2, sgx_ecall_get_msg3_trusted_t p_get_msg3, const sgx_ra_msg2_t* p_msg2, uint32_t msg2_size, sgx_ra_msg3_t** pp_msg3, uint32_t* p_msg3_size, config_t* config);
-bool enclave_generate_key();
+bool enclave_generate_key(sgx_enclave_id_t eid);
+bool save_enclave_state(const char *const statefile);
+bool save_public_key(const char *const public_key_file);
+FILE* open_file(const char* const filename, const char* const mode);
+bool enclave_get_buffer_sizes(sgx_enclave_id_t eid);
+bool allocate_buffers();
+/*
+extern sgx_enclave_id_t enclave_id;
+extern sgx_launch_token_t launch_token;
+extern int launch_token_updated;
+extern sgx_status_t sgx_lasterr;
+extern void *public_key_buffer;       
+extern size_t public_key_buffer_size; 
+extern void *sealed_data_buffer;
+extern size_t sealed_data_buffer_size;
+extern void *encrypted_aes_buffer;
+extern size_t encrypted_aes_buffer_size;
+extern void *input_buffer;
+extern size_t input_buffer_size;
+*/
+
+sgx_enclave_id_t enclave_id;
+sgx_launch_token_t launch_token;
+int launch_token_updated;
+sgx_status_t sgx_lasterr;
+void *public_key_buffer;       /* unused for signing */
+size_t public_key_buffer_size; /* unused for signing */
+void *sealed_data_buffer;
+size_t sealed_data_buffer_size;
+void *encrypted_aes_buffer;
+size_t encrypted_aes_buffer_size;
+void *input_buffer;
+size_t input_buffer_size;
 
 char debug= 0;
 char verbose= 0;
@@ -297,7 +329,6 @@ int main (int argc, char *argv[])
 		case 'p':
 			if ( ! from_hexstring((unsigned char *) keyin,
 					(unsigned char *) optarg, 64)) {
-
 				fprintf(stderr, "key must be 128-byte hex string\n");
 				exit(1);
 			}
@@ -314,7 +345,7 @@ int main (int argc, char *argv[])
 			break;
 		case 'r':
 			for(i= 0; i< 2; ++i) {
-				int retry= 10;
+				int retry = 10;
 				unsigned char ok= 0;
 				uint64_t *np= (uint64_t *) &config.nonce;
 
@@ -620,6 +651,18 @@ int do_attestation (sgx_enclave_id_t eid, config_t *config)
 	divider(stderr);
 
 	fprintf(stderr, "Waiting for msg2\n");
+
+	const char *opt_enclave_path = NULL;
+    const char *opt_statefile = NULL;
+    const char *opt_public_key_file = NULL;
+	opt_enclave_path = "./Enclave/Enclave.signed.so";
+    opt_statefile = "./demo_sgx/sealeddata.bin";
+    opt_public_key_file = "./demo_sgx/pub.pem";
+	enclave_get_buffer_sizes(eid);
+	allocate_buffers();
+	enclave_generate_key(eid);
+	save_enclave_state(opt_statefile);
+	save_public_key(opt_public_key_file);
 
 	/* Read msg2 
 	 *
@@ -927,6 +970,7 @@ int do_attestation (sgx_enclave_id_t eid, config_t *config)
 		}
 	}
 
+
 	free (msg4);
 
 	enclave_ra_close(eid, &sgxrv, ra_ctx);
@@ -1132,8 +1176,9 @@ int do_quote(sgx_enclave_id_t eid, config_t *config, sgx_ra_msg3_t **pp_msg3, ui
 
 		if (CryptBinaryToString((BYTE *)pse_manifest, (uint32_t)(pse_manifest_sz), CRYPT_STRING_BASE64 | CRYPT_STRING_NOCRLF, b64manifest, &sz_b64manifest) == FALSE) {
 			fprintf(stderr, "CryptBinaryToString: could not get Base64 encoded manifest length\n");
-			return 0;
-		}
+			return 0;#include <sgx_tcrypto.h>
+#include <sgx_utils.h>
+#include <sgx_tseal.h>
 	}
 
 #else
@@ -1151,62 +1196,6 @@ int do_quote(sgx_enclave_id_t eid, config_t *config, sgx_ra_msg3_t **pp_msg3, ui
 		print_hexstring(stdout, &config->nonce, 16);
 		printf("\"");
 	}
-
-	const char *opt_enclave_path = NULL;
-    const char *opt_statefile = NULL;
-    const char *opt_public_key_file = NULL;
-	opt_enclave_path = "../enclave/enclave.signed.so";
-    opt_statefile = "../demo_sgx/sealeddata.bin";
-    opt_public_key_file = "../demo_sgx/pub.pem";
-	enclave_generate_key()
-	save_enclave_state(opt_statefile)
-	save_public_key(opt_public_key_file)
-
-
-
-
-bool enclave_generate_key()
-{
-    sgx_status_t ecall_retval = SGX_ERROR_UNEXPECTED;
-
-    printf("[GatewayApp]: Calling enclave to generate key material\n");
-
-    /*
-    * Invoke ECALL, 'ecall_key_gen_and_seal()', to generate a keypair and seal it to the enclave.
-    */
-    sgx_lasterr = ecall_key_gen_and_seal(enclave_id,
-                                         &ecall_retval,
-                                         (char *)public_key_buffer,
-                                         public_key_buffer_size,
-                                         (char *)sealed_data_buffer,
-                                         sealed_data_buffer_size);
-
-
-    if (sgx_lasterr == SGX_SUCCESS &&
-        (ecall_retval != SGX_SUCCESS))
-    {
-        fprintf(stderr, "[GatewayApp]: ERROR: ecall_key_gen_and_seal returned %d\n", ecall_retval);
-        sgx_lasterr = SGX_ERROR_UNEXPECTED;
-    }
-
-    return (sgx_lasterr == SGX_SUCCESS);
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1229,6 +1218,234 @@ bool enclave_generate_key()
 	return 1;
 
 }
+
+bool enclave_get_buffer_sizes(sgx_enclave_id_t eid)
+{
+    sgx_status_t ecall_retval = SGX_SUCCESS;
+
+    printf("[GatewayApp]: Querying enclave for buffer sizes\n");
+
+    /*
+    * Invoke ECALL, 'ecall_calc_buffer_sizes()', to calculate the sizes of buffers needed for the untrusted app to store
+    * data (public key, sealed private key and signature) from the enclave.
+    */
+    sgx_lasterr = ecall_calc_buffer_sizes(eid,
+                                          &ecall_retval,
+                                          &public_key_buffer_size,
+                                          &sealed_data_buffer_size);
+    if (sgx_lasterr == SGX_SUCCESS &&
+        (ecall_retval != 0))
+    {
+        fprintf(stderr, "[GatewayApp]: ERROR: ecall_calc_buffer_sizes returned %d\n", ecall_retval);
+        sgx_lasterr = SGX_ERROR_UNEXPECTED;
+    }
+
+    return (sgx_lasterr == SGX_SUCCESS);
+}
+
+bool allocate_buffers()
+{
+    printf("[GatewayApp]: Allocating buffers\n");
+    sealed_data_buffer = calloc(sealed_data_buffer_size, 1);
+    public_key_buffer = calloc(public_key_buffer_size, 1);
+    encrypted_aes_buffer_size = 256;
+    encrypted_aes_buffer = calloc(encrypted_aes_buffer_size, 1);
+    if (sealed_data_buffer == NULL || public_key_buffer == NULL || encrypted_aes_buffer == NULL)
+    {
+        fprintf(stderr, "[GatewayApp]: allocate_buffers() memory allocation failure\n");
+        sgx_lasterr = SGX_ERROR_UNEXPECTED;
+    }
+
+    return (sgx_lasterr == SGX_SUCCESS);
+}
+
+
+
+bool enclave_generate_key(sgx_enclave_id_t eid)
+{
+    sgx_status_t ecall_retval = SGX_ERROR_UNEXPECTED;
+
+    printf("[GatewayApp]: Calling enclave to generate key material\n");
+
+    /*
+    * Invoke ECALL, 'ecall_key_gen_and_seal()', to generate a keypair and seal it to the enclave.
+    */
+    sgx_lasterr = ecall_key_gen_and_seal(eid,
+                                         &ecall_retval,
+                                         (char *)public_key_buffer,
+                                         public_key_buffer_size,
+                                         (char *)sealed_data_buffer,
+                                         sealed_data_buffer_size);
+
+	printf("[GatewayApp]: generate rsa key success");
+    if (sgx_lasterr == SGX_SUCCESS &&
+        (ecall_retval != SGX_SUCCESS))
+    {
+        fprintf(stderr, "[GatewayApp]: ERROR: ecall_key_gen_and_seal returned %d\n", ecall_retval);
+        sgx_lasterr = SGX_ERROR_UNEXPECTED;
+    }
+
+    return (sgx_lasterr == SGX_SUCCESS);
+}
+
+bool save_enclave_state(const char *const statefile)
+{
+    bool ret_status = true;
+
+    printf("[GatewayApp]: Saving enclave state\n");
+
+    FILE *file = open_file(statefile, "wb");
+
+    if (file == NULL)
+    {
+        fprintf(stderr, "[GatewayApp]: save_enclave_state() fopen failed\n");
+        sgx_lasterr = SGX_ERROR_UNEXPECTED;
+        return false;
+    }
+
+	printf("%d",sealed_data_buffer_size);
+    if (fwrite(sealed_data_buffer, sealed_data_buffer_size, 1, file) != 1)
+    {
+        fprintf(stderr, "[GatewayApp]: Enclave state only partially written.\n");
+        sgx_lasterr = SGX_ERROR_UNEXPECTED;
+        ret_status = false;
+    }
+
+    fclose(file);
+
+    return ret_status;
+}
+
+FILE* open_file(const char* const filename, const char* const mode)
+{
+    return fopen(filename, mode);
+}
+
+bool save_public_key(const char *const public_key_file)
+{
+    bool ret_status = true;
+    uint8_t le_e[4]={0x01,0x00,0x01,0x00};
+    EVP_PKEY *rsa_key = NULL;
+    RSA *rsa_ctx = NULL;
+    BIGNUM* n = NULL;
+    BIGNUM* e = NULL;
+    //BIO *bp = NULL;
+
+    e = BN_lebin2bn(le_e, 4, e);
+
+    uint8_t copied_bytes[public_key_buffer_size];
+    for (size_t i = 0 ; i < public_key_buffer_size ; ++i)
+    {
+	copied_bytes[i] = ((uint8_t *)public_key_buffer)[i];
+    }
+
+	printf("this is copied bytes");
+	for (int j = 0; j < public_key_buffer_size; ++j)
+	{
+		printf("%c",copied_bytes[j]);
+	}
+	//printf(copied_bytes);
+
+    n= BN_lebin2bn(copied_bytes, public_key_buffer_size, n);
+    rsa_ctx = RSA_new();
+    rsa_key = EVP_PKEY_new();
+
+    if (rsa_ctx == NULL || rsa_key == NULL || !EVP_PKEY_assign_RSA(rsa_key, rsa_ctx))
+    {
+        RSA_free(rsa_ctx);
+        rsa_ctx = NULL;
+        ret_status=false;
+		printf("error");
+        //goto cleanup;
+    }
+	printf("[GatewayApp]: this is n\n");
+	char* hexn = BN_bn2hex(n);
+	int t = 0;
+	while (hexn[t] != '\0') {
+		printf("%c", hexn[t]);
+		t = t + 1;
+	}
+	printf("\n");
+	printf("[GatewayApp]: this is e\n");
+	t = 0;
+	char* hexe = BN_bn2hex(e);
+	while (hexe[t] != '\0') {
+		printf("%c", hexe[t]);
+		t = t + 1;
+	}
+
+    if (!RSA_set0_key(rsa_ctx, n, e, NULL))
+    {
+        ret_status=false;
+		printf("error");
+        //goto cleanup;
+    }
+
+    printf("[GatewayApp]: Saving public key\n");
+
+	
+
+	BIO *out;
+	out = BIO_new_file(public_key_file,"wb");
+    int ret = PEM_write_bio_RSAPublicKey(out, rsa_ctx);
+    printf("writepub:%d\n",ret);
+    BIO_flush(out);
+    BIO_free(out);
+	return ret_status;
+	//printf(n);
+
+	/*
+	if((bp = BIO_new(BIO_s_file())) == NULL)
+	{
+		printf("[GatewayApp]: generate_key bio file new error!\n");
+        ret_status = false;
+        goto cleanup;
+	}
+	/*
+	if(BIO_write_filename(bp, public_key_file) <= 0)
+	{
+		printf("[GatewayApp]: BIO_write_filename error!\n");
+        ret_status = false;
+        goto cleanup;
+	}
+	
+	if(PEM_write_bio_RSAPublicKey(bp, rsa_ctx) != 1)
+	{
+		printf("[GatewayApp]: PEM_write_bio_RSAPublicKey error!\n");
+        ret_status = false;
+        goto cleanup;
+	}
+	
+	
+
+	cleanup:
+    if(!ret_status)sgx_lasterr = SGX_ERROR_UNEXPECTED;
+    if(bp)BIO_free_all(bp);
+    if(rsa_key)EVP_PKEY_free(rsa_key);
+    if(n)BN_clear_free(n);
+    if(e)BN_clear_free(e);
+
+    return ret_status;
+	*/
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 #ifndef SAFE_FREE
 #define SAFE_FREE(ptr) {if (NULL != (ptr)) {free(ptr); (ptr)=NULL;}}
 #endif
