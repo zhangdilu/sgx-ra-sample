@@ -19,11 +19,13 @@ LDLIBS += -L ../interface $(SGX_HOST_LDLIBS) -lcrypto -ldl
 .PHONY: all clean
 
 #all: ../interface/libenclave_stub_u.a app
-all: app
+all: app libapp.a 
 #../interface/libenclave_stub_u.a: ../interface/Enclave.edl
 #../interface/libenclave_stub_u.a: ../../../Enclave/Enclave.edl
 
 app: ../../../Enclave_u.o test2.o app.o globals.o ocall_print_string.o decode_sgx_status.o enclave.o buffers.o enclave_state.o endianswap.o readfile.o ecall_buffer.o keygen.o crypto.o encrypt.o open_file.o
+libapp.a: ../../../Enclave_u.o app.o globals.o ocall_print_string.o decode_sgx_status.o enclave.o buffers.o enclave_state.o endianswap.o readfile.o ecall_buffer.o keygen.o crypto.o encrypt.o open_file.o 
+	ar rs $@ $^
 
 clean:
 	rm -f ../interface/*_u.* app *.o
