@@ -23,3 +23,4 @@ void *encrypted_aes_buffer;
 size_t encrypted_aes_buffer_size;
 void *input_buffer;
 size_t input_buffer_size;
+size_t *out_size;

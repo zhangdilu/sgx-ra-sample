@@ -30,6 +30,7 @@ typedef struct ms_ecall_unseal_and_decrypt_t {
 	uint32_t ms_encrypted_key_size;
 	char* ms_sealed;
 	size_t ms_sealed_size;
+	uint32_t* ms_output_size;
 } ms_ecall_unseal_and_decrypt_t;
 
 typedef struct ms_enclave_ra_init_t {
@@ -127,7 +128,7 @@ sgx_status_t ecall_calc_buffer_sizes(sgx_enclave_id_t eid, sgx_status_t* retval,
 	return status;
 }
 
-sgx_status_t ecall_unseal_and_decrypt(sgx_enclave_id_t eid, sgx_status_t* retval, uint8_t* msg, uint32_t msg_size, uint8_t* encrypted_key, uint32_t encrypted_key_size, char* sealed, size_t sealed_size)
+sgx_status_t ecall_unseal_and_decrypt(sgx_enclave_id_t eid, sgx_status_t* retval, uint8_t* msg, uint32_t msg_size, uint8_t* encrypted_key, uint32_t encrypted_key_size, char* sealed, size_t sealed_size, uint32_t* output_size)
 {
 	sgx_status_t status;
 	ms_ecall_unseal_and_decrypt_t ms;
@@ -137,6 +138,7 @@ sgx_status_t ecall_unseal_and_decrypt(sgx_enclave_id_t eid, sgx_status_t* retval
 	ms.ms_encrypted_key_size = encrypted_key_size;
 	ms.ms_sealed = sealed;
 	ms.ms_sealed_size = sealed_size;
+	ms.ms_output_size = output_size;
 	status = sgx_ecall(eid, 3, &ocall_table_Enclave, &ms);
 	if (status == SGX_SUCCESS && retval) *retval = ms.ms_retval;
 	return status;

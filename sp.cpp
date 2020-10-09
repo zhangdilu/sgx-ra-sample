@@ -52,7 +52,7 @@ in the License.
 #include "logfile.h"
 #include "settings.h"
 #include "enclave_verify.h"
-#include "encrypt/encrypt.h"
+#include "demo_sgx/encrypt/encrypt.h"
 
 using namespace json;
 using namespace std;

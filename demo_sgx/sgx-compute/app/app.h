@@ -29,6 +29,7 @@ extern void *encrypted_aes_buffer;
 extern size_t encrypted_aes_buffer_size;
 extern void *input_buffer;
 extern size_t input_buffer_size;
+extern size_t *out_size;
 
 
 /* Function prototypes */

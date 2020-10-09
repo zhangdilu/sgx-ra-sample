@@ -24,6 +24,7 @@ bool enclave_decrypt_data()
     sgx_status_t ecall_retval = SGX_ERROR_UNEXPECTED;
 
     printf("[GatewayApp]: Calling enclave to generate key material\n");
+    out_size = (uint32_t *)malloc(sizeof(uint32_t));
     sgx_lasterr = ecall_unseal_and_decrypt(enclave_id,
                                         &ecall_retval,
                                         (uint8_t *)input_buffer,
@@ -31,7 +32,9 @@ bool enclave_decrypt_data()
                                         (uint8_t *)encrypted_aes_buffer,
                                         (uint32_t)encrypted_aes_buffer_size,
                                         (char *)sealed_data_buffer,
-                                        sealed_data_buffer_size);
+                                        sealed_data_buffer_size,
+                                        out_size);
+    printf("this is size %u",*out_size);
     if (sgx_lasterr == SGX_SUCCESS &&
         (ecall_retval != 0))
     {

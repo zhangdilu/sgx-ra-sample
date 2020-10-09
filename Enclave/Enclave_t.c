@@ -56,6 +56,7 @@ typedef struct ms_ecall_unseal_and_decrypt_t {
 	uint32_t ms_encrypted_key_size;
 	char* ms_sealed;
 	size_t ms_sealed_size;
+	uint32_t* ms_output_size;
 } ms_ecall_unseal_and_decrypt_t;
 
 typedef struct ms_enclave_ra_init_t {
@@ -353,10 +354,14 @@ static sgx_status_t SGX_CDECL sgx_ecall_unseal_and_decrypt(void* pms)
 	size_t _tmp_sealed_size = ms->ms_sealed_size;
 	size_t _len_sealed = _tmp_sealed_size;
 	char* _in_sealed = NULL;
+	uint32_t* _tmp_output_size = ms->ms_output_size;
+	size_t _len_output_size = sizeof(uint32_t);
+	uint32_t* _in_output_size = NULL;
 
 	CHECK_UNIQUE_POINTER(_tmp_msg, _len_msg);
 	CHECK_UNIQUE_POINTER(_tmp_encrypted_key, _len_encrypted_key);
 	CHECK_UNIQUE_POINTER(_tmp_sealed, _len_sealed);
+	CHECK_UNIQUE_POINTER(_tmp_output_size, _len_output_size);
 
 	//
 	// fence after pointer checks
@@ -417,13 +422,33 @@ static sgx_status_t SGX_CDECL sgx_ecall_unseal_and_decrypt(void* pms)
 		}
 
 	}
+	if (_tmp_output_size != NULL && _len_output_size != 0) {
+		if ( _len_output_size % sizeof(*_tmp_output_size) != 0)
+		{
+			status = SGX_ERROR_INVALID_PARAMETER;
+			goto err;
+		}
+		if ((_in_output_size = (uint32_t*)malloc(_len_output_size)) == NULL) {
+			status = SGX_ERROR_OUT_OF_MEMORY;
+			goto err;
+		}
 
-	ms->ms_retval = ecall_unseal_and_decrypt(_in_msg, _tmp_msg_size, _in_encrypted_key, _tmp_encrypted_key_size, _in_sealed, _tmp_sealed_size);
+		memset((void*)_in_output_size, 0, _len_output_size);
+	}
+
+	ms->ms_retval = ecall_unseal_and_decrypt(_in_msg, _tmp_msg_size, _in_encrypted_key, _tmp_encrypted_key_size, _in_sealed, _tmp_sealed_size, _in_output_size);
+	if (_in_output_size) {
+		if (memcpy_s(_tmp_output_size, _len_output_size, _in_output_size, _len_output_size)) {
+			status = SGX_ERROR_UNEXPECTED;
+			goto err;
+		}
+	}
 
 err:
 	if (_in_msg) free(_in_msg);
 	if (_in_encrypted_key) free(_in_encrypted_key);
 	if (_in_sealed) free(_in_sealed);
+	if (_in_output_size) free(_in_output_size);
 	return status;
 }
 

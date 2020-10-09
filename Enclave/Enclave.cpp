@@ -152,7 +152,7 @@ sgx_status_t ecall_calc_buffer_sizes(size_t* epubkey_size, size_t* esealedprivke
 
 
 
-sgx_status_t ecall_unseal_and_decrypt(uint8_t *msg, uint32_t msg_size, uint8_t *encrypted_key, uint32_t encrypted_key_size, char *sealed, size_t sealed_size)
+sgx_status_t ecall_unseal_and_decrypt(uint8_t *msg, uint32_t msg_size, uint8_t *encrypted_key, uint32_t encrypted_key_size, char *sealed, size_t sealed_size, uint32_t *output_size)
 {
   sgx_status_t ret = SGX_ERROR_UNEXPECTED;
 
@@ -173,6 +173,10 @@ sgx_status_t ecall_unseal_and_decrypt(uint8_t *msg, uint32_t msg_size, uint8_t *
   uint32_t text_size=msg_size-ctr_size;
   uint8_t *p_src=(uint8_t *)malloc(text_size);
   uint8_t *p_dst=(uint8_t *)malloc(text_size);
+  int k = 0;
+
+  *output_size = 0;
+
 
 
   //print("\nTrustedApp: Received sensor data and the sealed private key.\n");
@@ -227,6 +231,11 @@ sgx_status_t ecall_unseal_and_decrypt(uint8_t *msg, uint32_t msg_size, uint8_t *
   memcpy(p_src,msg+ctr_size,text_size);
 
   sgx_aes_ctr_decrypt((sgx_aes_gcm_128bit_key_t *)aeskey,p_src,text_size,p_ctr,128,p_dst);
+  while (p_dst[k] != '\0'){
+    *output_size = *output_size + 1;
+    k++;
+  }
+
   //print(p_dst);
   //printf("\nTrustedApp: Unsealed the sealed private key, decrypted sensor data with this private key.\n");
   ret = SGX_SUCCESS;
