@@ -143,6 +143,8 @@ int testDigitalEnvelope(int symbol)
     cleanup_buffers();
 
     printf("we are success");
+    printf("%u",*out_size);
 
-    return success_status ? EXIT_SUCCESS : EXIT_FAILURE;
+    //return success_status ? EXIT_SUCCESS : EXIT_FAILURE;
+    return (int)*out_size;
 }
