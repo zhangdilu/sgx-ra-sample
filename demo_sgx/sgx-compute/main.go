@@ -1,7 +1,7 @@
 package main
 
 import (
-	"../app"
+	"./app"
 	"fmt"
 	"github.com/hyperledger/fabric-chaincode-go/shim"
 	"github.com/hyperledger/fabric-protos-go/peer"
