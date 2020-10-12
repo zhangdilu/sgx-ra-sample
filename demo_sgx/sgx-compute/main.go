@@ -1,8 +1,8 @@
 package main
 
 import (
-	"./app"
 	"fmt"
+	"github.com/sgx-ra/demo_sgx/sgx-compute/app"
 	"github.com/hyperledger/fabric-chaincode-go/shim"
 	"github.com/hyperledger/fabric-protos-go/peer"
 )

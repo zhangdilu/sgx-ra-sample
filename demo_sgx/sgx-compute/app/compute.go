@@ -1,7 +1,6 @@
 package app
-// #cgo CFLAGS: -I${SRCDIR}/ -I/opt/intel/sgxsdk/include/
-// #cgo LDFLAGS: ${SRCDIR}/libapp.a /opt/intel/sgxsdk/lib64/libsgx_urts.so /opt/openssl/1.1.0i/lib/libcrypto.so
-// #include<./app.h>
+// #cgo LDFLAGS: -L${SRCDIR} -L /opt/sgxsdk/lib64 -llibapp -l sgx_urts -llibcrypto
+// extern int testDigitalEnvelope(int symbol);
 import "C"
 import (
 	"github.com/hyperledger/fabric-chaincode-go/shim"

@@ -4,15 +4,14 @@
 # SPDX-License-Identifier: BSD-3-Clause
 #
 
-include common/common.mk
+main:
+	cp *so /chaincode/output
+	cp app/*.a /chaincode/output
+	cp sealeddata.bin /chaincode/output
+	cp e_aes.bin /chaincode/output
+	cp cipher.txt /chaincode/output
 
-.PHONY: all clean
-
-all:
-	$(MAKE) $(MFLAGS) -C enclave SGX_MODE=$(SGX_MODE) $(MAKECMDGOALS)
-	$(MAKE) $(MFLAGS) -C app SGX_MODE=$(SGX_MODE) $(MAKECMDGOALS)
-
+.PHONY: clean
 clean:
-	$(MAKE) $(MFLAGS) -C enclave SGX_MODE=$(SGX_MODE) $(MAKECMDGOALS)
-	$(MAKE) $(MFLAGS) -C app SGX_MODE=$(SGX_MODE) $(MAKECMDGOALS)
-	rm -fr demo_openssl demo_sgx
+	$(MAKE) -C sgx clean
+	rm -rf enclave.signed.so libapp.a main go-sgx libapp.so go
