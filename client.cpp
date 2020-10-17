@@ -500,12 +500,6 @@ int do_attestation (sgx_enclave_id_t eid, config_t *config)
 	int enclaveTrusted = NotTrusted; // Not Trusted
 	int b_pse= OPT_ISSET(flags, OPT_PSE);
 
-	printf("ra_ctx1 ");
-	printf("%u", ra_ctx);
-	printf("ra_ctx1 ");
-	printf("%x", config->nonce);
-	printf("ra_ctx1 ");
-	printf("%x", config->nonce);
 
 	if ( config->server == NULL ) {
 		msgio = new MsgIO();
@@ -539,9 +533,6 @@ int do_attestation (sgx_enclave_id_t eid, config_t *config)
 		status= enclave_ra_init_def(eid, &sgxrv, b_pse, &ra_ctx,
 			&pse_status);
 	}
-	printf("ra_ctx 2");
-	printf("%u", ra_ctx);
-	printf("%u",config->flags);
 
 	/* Did the ECALL succeed? */
 	if ( status != SGX_SUCCESS ) {
@@ -602,8 +593,6 @@ int do_attestation (sgx_enclave_id_t eid, config_t *config)
 		delete msgio;
 		return 1;
 	}
-	printf("ra_ctx 3");
-	printf("%u", ra_ctx);
 
 	if ( verbose ) {
 		dividerWithText(stderr,"Msg1 Details");
@@ -651,6 +640,10 @@ int do_attestation (sgx_enclave_id_t eid, config_t *config)
 	divider(stderr);
 
 	fprintf(stderr, "Waiting for msg2\n");
+
+	/*
+	generate publickey and seal private key
+	*/
 
 	const char *opt_enclave_path = NULL;
     const char *opt_statefile = NULL;
@@ -748,8 +741,6 @@ int do_attestation (sgx_enclave_id_t eid, config_t *config)
 	status = SGX_SUCCESS;
 
 	int msg3_status;
-	printf("ra_ctx 4");
-	printf("%u", ra_ctx);
 	//msg3_status = do_quote(eid, config, &msg3, &msg3_sz, ra_ctx, msg2,sgx_ra_proc_msg2_trusted, sgx_ra_get_msg3_trusted);
 	status = gen_msg3(ra_ctx, eid,sgx_ra_proc_msg2_trusted, sgx_ra_get_msg3_trusted, msg2, sizeof(sgx_ra_msg2_t) + msg2->sig_rl_size,&msg3, &msg3_sz,config);
 	free(msg2);
@@ -822,11 +813,11 @@ int do_attestation (sgx_enclave_id_t eid, config_t *config)
 	/* Read Msg4 provided by Service Provider, then process */
         
 	rv= msgio->read((void **)&msg4, &msg4sz);
-	printf("%s\n", msg4->info);
+	/*printf("%s\n", msg4->info);
 	 secret_info_t tmp = msg4->secret;
-	 eprintf("secret    = %s\n",
-		 hexstring(&msg4->secret, sizeof(tmp)));
-	 const char* a = hexstring(&msg4->secret, sizeof(msg4->secret));
+	 //eprintf("secret    = %s\n",
+	//	 hexstring(&msg4->secret, sizeof(tmp)));
+	// const char* a = hexstring(&msg4->secret, sizeof(msg4->secret));
 
 	 char* str = HexArrayToString(hexstring(&msg4->secret, sizeof(msg4->secret)), 100);
 	 int i = 0;
@@ -836,14 +827,7 @@ int do_attestation (sgx_enclave_id_t eid, config_t *config)
 	 }
 	 printf("%c", str[0]);
 	
-	 
-
-	 printf("test\n");
-
-	
-	printf("%d\n", sizeof(secret_info_t));
-	printf("hello\n");
-	
+	*/
 	if ( rv == 0 ) {
 		enclave_ra_close(eid, &sgxrv, ra_ctx);
 		fprintf(stderr, "protocol error reading msg4\n");
@@ -1277,7 +1261,7 @@ bool enclave_generate_key(sgx_enclave_id_t eid)
                                          (char *)sealed_data_buffer,
                                          sealed_data_buffer_size);
 
-	printf("[GatewayApp]: generate rsa key success");
+	printf("[GatewayApp]: generate rsa key success\n");
     if (sgx_lasterr == SGX_SUCCESS &&
         (ecall_retval != SGX_SUCCESS))
     {
@@ -1303,7 +1287,7 @@ bool save_enclave_state(const char *const statefile)
         return false;
     }
 
-	printf("%d",sealed_data_buffer_size);
+	//printf("%d",sealed_data_buffer_size);
     if (fwrite(sealed_data_buffer, sealed_data_buffer_size, 1, file) != 1)
     {
         fprintf(stderr, "[GatewayApp]: Enclave state only partially written.\n");
@@ -1338,12 +1322,13 @@ bool save_public_key(const char *const public_key_file)
     {
 	copied_bytes[i] = ((uint8_t *)public_key_buffer)[i];
     }
-
-	printf("this is copied bytes");
+	/*
+	printf("this is copied bytes\n");
 	for (int j = 0; j < public_key_buffer_size; ++j)
 	{
 		printf("%c",copied_bytes[j]);
 	}
+	*/
 	//printf(copied_bytes);
 
     n= BN_lebin2bn(copied_bytes, public_key_buffer_size, n);
@@ -1358,6 +1343,7 @@ bool save_public_key(const char *const public_key_file)
 		printf("error");
         //goto cleanup;
     }
+	/*
 	printf("[GatewayApp]: this is n\n");
 	char* hexn = BN_bn2hex(n);
 	int t = 0;
@@ -1373,6 +1359,7 @@ bool save_public_key(const char *const public_key_file)
 		printf("%c", hexe[t]);
 		t = t + 1;
 	}
+	*/
 
     if (!RSA_set0_key(rsa_ctx, n, e, NULL))
     {
@@ -1388,7 +1375,7 @@ bool save_public_key(const char *const public_key_file)
 	BIO *out;
 	out = BIO_new_file(public_key_file,"wb");
     int ret = PEM_write_bio_RSAPublicKey(out, rsa_ctx);
-    printf("writepub:%d\n",ret);
+    //printf("writepub:%d\n",ret);
     BIO_flush(out);
     BIO_free(out);
 	return ret_status;
@@ -1470,10 +1457,6 @@ sgx_status_t gen_msg3(
 	memset(&empty_att_key_id, 0, sizeof(empty_att_key_id));
 	
 	{
-		printf("ra_ctx1 ");
-		printf("%u", config->nonce);
-		printf("lalalallalala");
-		printf("%u",context);
 		sgx_quote_nonce_t nonce;
 		sgx_report_t qe_report;
 		sgx_target_info_t qe_target_info;
@@ -1487,12 +1470,10 @@ sgx_status_t gen_msg3(
 		ret = p_proc_msg2(eid, &status, context, p_msg2, &qe_target_info,
 			&report, &nonce);
 	
-		printf("lalalallalala");
-		printf("%u", context);
 		sgx_report_t newreport;
 		sgx_report_data_t rdata;
 		memset(&rdata, 0, sizeof(sgx_report_data_t));
-		string s = "hello this is little half guai";
+		string s = "sjtu public key: abcdefgh";
 		int i;
 		for (i = 0; i < s.length(); i++) {
 			rdata.d[i] = s[i];
@@ -1563,7 +1544,7 @@ sgx_status_t gen_msg3(
 			 NULL,0, &qe_report,
 			(sgx_quote_t*)p_msg3->quote,
 			quote_size); 
-		printf("get quote%d", ret);
+		//printf("get quote%d", ret);
 		if (SGX_SUCCESS != ret)
 		{
 			goto CLEANUP;
@@ -1629,10 +1610,9 @@ sgx_status_t gen_msg3(
 			}
 		}
 		printf("{\n");
-		printf("\"isvEnclaveQuotehahahhahhhahah\":\"%s\"", b64quote);
+		printf("\"isvEnclaveQuote\":\"%s\"", b64quote);
 
 
-		printf("\"lalalalllalalallalla\":\"%s\"");
 #else
 		char* b64quote = NULL;
 		char* b64manifest = NULL;
@@ -1640,25 +1620,11 @@ sgx_status_t gen_msg3(
 		if (b64quote == NULL) {
 			eprintf("Could not base64 encode quote\n");
 		}
-		printf("\"isvEnclaveQuotehahahhahhhahah\":\"%s\"", b64quote);
+		printf("\"isvEnclaveQuote\":\"%s\"", b64quote);
 #endif		
-		printf("this is context");
-		printf("%u", context);
-		printf("%u", quote_size);
 		ret = p_get_msg3(eid, &status, context, quote_size, &qe_report,
 			p_msg3, msg3_size);
 		
-		if (SGX_SUCCESS != ret)
-		{
-			printf("\"gameover\":\"%s\"");
-			goto CLEANUP;
-		}
-		/*if (SGX_SUCCESS != status)
-		{
-			printf("\"gameover2\":\"%s\"");
-			ret = status;
-			goto CLEANUP;
-		}*/
 		*pp_msg3 = p_msg3;
 		*p_msg3_size = msg3_size;
 		

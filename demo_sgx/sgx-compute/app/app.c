@@ -86,10 +86,10 @@ int testDigitalEnvelope(int symbol)
     if (symbol == 1)
     {
         opt_decrypt = true;
-        opt_enclave_path = "../Enclave.signed.so";
-        opt_statefile = "../sealeddata.bin";
-        opt_aes_key_file = "../e_aes.bin";
-        opt_input_file = "../cipher.txt";
+        opt_enclave_path = "./Enclave.signed.so";
+        opt_statefile = "./sealeddata.bin";
+        opt_aes_key_file = "./e_aes.bin";
+        opt_input_file = "./cipher.txt";
     }
     
 

@@ -794,7 +794,7 @@ int process_msg3 (MsgIO *msgio, IAS_Connection *ias, sgx_ra_msg1_t *msg1,
 		free(msg3);
 		return 0;
 	}
-	printf("\"isvEnclaveQuotehahhahhahhhah\":\"%s\"", b64quote);
+	printf("\"isvEnclaveQuote\":\"%s\"", b64quote);
 	q= (sgx_quote_t *) msg3->quote;
 
 	if ( verbose ) {
@@ -900,8 +900,9 @@ int process_msg3 (MsgIO *msgio, IAS_Connection *ias, sgx_ra_msg1_t *msg1,
 			eprintf("report_data[64]    = %s\n",
 				hexstring(&r->report_data, 64));
 		}
-		printf("lalallallalalal little kuai");
-		printf("%s\n", &r->report_data);
+		printf("\nreport data: [%s]\n", &r->report_data);
+
+		//to do (now validation bypassed )
 		/*
 		if ( CRYPTO_memcmp((void *) vfy_rdata, (void *) &r->report_data,
 			64) ) {
@@ -930,7 +931,6 @@ int process_msg3 (MsgIO *msgio, IAS_Connection *ias, sgx_ra_msg1_t *msg1,
 
 #ifndef _WIN32
 /* Windows implementation is not available yet */
-		printf("lalalallalallala");
 		if ( ! verify_enclave_identity(config->req_mrsigner, 
 			config->req_isv_product_id, config->min_isvsvn, 
 			config->allow_debug_enclave, r) ) {
@@ -938,6 +938,8 @@ int process_msg3 (MsgIO *msgio, IAS_Connection *ias, sgx_ra_msg1_t *msg1,
 			eprintf("Invalid enclave.\n");
 			msg4->status= NotTrusted;
 		}
+
+		//to do (fill the value of mrenclave)
 		string MRENCLAVE = "28752b7e3549ad46a912fd62278e439cae38f4da0624c27689fa5bcdedf0aa66";
 		sgx_measurement_t req_mr_enclave;
 		from_hexstring((unsigned char*)&req_mr_enclave, MRENCLAVE.c_str(), MRENCLAVE.length() / 2);
@@ -979,19 +981,13 @@ int process_msg3 (MsgIO *msgio, IAS_Connection *ias, sgx_ra_msg1_t *msg1,
 
 		secret_info_t news = { "1abcdefg" };
 		msg4->secret = news;
-		string s = "hello this is little kuai";
+		string s = "transaction id 1f3fsdzxdw";
 		int i;
 		for (i = 0; i < s.length(); i++) {
 			msg4->info[i] = s[i];
 		}
 		msg4->info[i] = '\0';
-	
 
-		printf("%d\n", sizeof(msg4->secret));
-		eprintf("secret    = %s\n",
-			hexstring(&msg4->secret, sizeof(msg4->secret)));
-		eprintf("secret    = %x\n",
-			hexstring(&msg4->secret, sizeof(msg4->secret)));
 
 		msgio->send_partial(&msg4->info, sizeof(msg4->info));
 		fsend_msg_partial(fplog, &msg4->status, sizeof(msg4->status));

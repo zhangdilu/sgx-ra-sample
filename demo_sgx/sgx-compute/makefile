@@ -5,11 +5,11 @@
 #
 
 main:
-	cp *so /chaincode/output
+	cp app/*.so /chaincode/output
 	cp app/*.a /chaincode/output
-	cp sealeddata.bin /chaincode/output
-	cp e_aes.bin /chaincode/output
-	cp cipher.txt /chaincode/output
+	cp app/sealeddata.bin /chaincode/output
+	cp app/e_aes.bin /chaincode/output
+	cp app/cipher.txt /chaincode/output
 
 .PHONY: clean
 clean:
