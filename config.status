@@ -437,7 +437,7 @@ Copyright (C) 2012 Free Software Foundation, Inc.
 This config.status script is free software; the Free Software Foundation
 gives unlimited permission to copy, distribute and modify it."
 
-ac_pwd='/home/zhangdl/Desktop/sgx-ra-sample'
+ac_pwd='/home/mpc/go/src/github.com/sgx-ra'
 srcdir='.'
 INSTALL='/usr/bin/install -c'
 MKDIR_P='/usr/bin/mkdir -p'
@@ -703,12 +703,12 @@ S["mkdir_p"]="$(MKDIR_P)"
 S["MKDIR_P"]="/usr/bin/mkdir -p"
 S["INSTALL_STRIP_PROGRAM"]="$(install_sh) -c -s"
 S["STRIP"]=""
-S["install_sh"]="${SHELL} /home/zhangdl/Desktop/sgx-ra-sample/install-sh"
-S["MAKEINFO"]="${SHELL} /home/zhangdl/Desktop/sgx-ra-sample/missing makeinfo"
-S["AUTOHEADER"]="${SHELL} /home/zhangdl/Desktop/sgx-ra-sample/missing autoheader"
-S["AUTOMAKE"]="${SHELL} /home/zhangdl/Desktop/sgx-ra-sample/missing automake-1.16"
-S["AUTOCONF"]="${SHELL} /home/zhangdl/Desktop/sgx-ra-sample/missing autoconf"
-S["ACLOCAL"]="${SHELL} /home/zhangdl/Desktop/sgx-ra-sample/missing aclocal-1.16"
+S["install_sh"]="${SHELL} /home/mpc/go/src/github.com/sgx-ra/install-sh"
+S["MAKEINFO"]="${SHELL} /home/mpc/go/src/github.com/sgx-ra/missing makeinfo"
+S["AUTOHEADER"]="${SHELL} /home/mpc/go/src/github.com/sgx-ra/missing autoheader"
+S["AUTOMAKE"]="${SHELL} /home/mpc/go/src/github.com/sgx-ra/missing automake-1.16"
+S["AUTOCONF"]="${SHELL} /home/mpc/go/src/github.com/sgx-ra/missing autoconf"
+S["ACLOCAL"]="${SHELL} /home/mpc/go/src/github.com/sgx-ra/missing aclocal-1.16"
 S["VERSION"]="1.0"
 S["PACKAGE"]="sgxautosample"
 S["CYGPATH_W"]="echo"
